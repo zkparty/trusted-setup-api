@@ -1,9 +1,9 @@
 import {config as dotEnvConfig} from 'dotenv';
 import express, { Request, Response } from 'express';
-import { Participant } from '../models/participant';
-import { authenticateParticipant } from '../controllers/participant';
-import { ceremonyExists, getCeremony } from '../controllers/ceremony';
 import { getQueue, joinQueue, checkinQueue, leaveQueue } from '../controllers/queue';
+import { authenticateParticipant } from '../controllers/participant';
+import { ceremonyExists } from '../controllers/ceremony';
+import { Participant } from '../models/participant';
 
 
 dotEnvConfig();
@@ -127,8 +127,7 @@ router.get('/checkin', authenticateParticipant, async (req: Request, res: Respon
 router.get('/leave', authenticateParticipant, async (req: Request, res: Response) => {
     const participant = req.user as Participant;
     const queue = await getQueue(participant.uid);
-    const ceremony = await getCeremony();
-    const result = await leaveQueue(queue, ceremony);
+    const result = await leaveQueue(queue);
     res.json(result);
 });
 

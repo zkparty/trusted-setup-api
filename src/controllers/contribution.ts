@@ -1,5 +1,5 @@
 import {config as dotEnvConfig} from 'dotenv';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { ImplementationDetails, Transcript } from '../models/contribution';
 import { Participant } from "../models/participant";
 import { ErrorResponse } from '../models/request';
@@ -24,7 +24,7 @@ export async function startContribution(participant: Participant, implementation
     const now = Timestamp.fromMillis(Date.now() - (SECONDS_ALLOWANCE_FOR_START *1000));
     if ( now > queue.checkingDeadline){
         // must be called within N seconds otherwise next in queue has to start
-        await ceremonyDB.update({currentIndex: ceremony.currentIndex + 1});
+        await ceremonyDB.update({currentIndex: FieldValue.increment(1)});
         await ceremonyDB.collection('queue').doc(uid).update({status: 'ABSENT'});
         return <ErrorResponse>{code: -1, message: 'The time to call this function has expired'};
     }
@@ -46,11 +46,10 @@ export async function completeContribution(participant: Participant, transcript:
     const db = getFirestore();
     // TODO: verify transcript. What happens if it is wrong
     // TODO: append transcript to ceremony
-    const ceremony = await getCeremony();
     const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
     await ceremonyDB.update({
-        currentIndex: ceremony.currentIndex + 1,
-        complete: ceremony.complete + 1,
+        currentIndex: FieldValue.increment(1),
+        complete: FieldValue.increment(1),
     });
     await ceremonyDB.collection('queue').doc(uid).update({status: 'COMPLETED'});
     const queue = await getQueue(uid);
@@ -62,10 +61,9 @@ export async function abortContribution(participant: Participant){
     const queue = await getQueue(uid);
     if (queue.status === 'WAITING' || queue.status === 'READY' || queue.status === 'RUNNING'){
         const db = getFirestore();
-        const ceremony = await getCeremony();
         const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
         await ceremonyDB.update({
-            currentIndex: ceremony.currentIndex + 1,
+            currentIndex: FieldValue.increment(1),
         });
         await ceremonyDB.collection('queue').doc(uid).update({status: 'LEFT'});
         queue.status = 'LEFT';

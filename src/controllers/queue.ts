@@ -1,10 +1,10 @@
 import {config as dotEnvConfig} from 'dotenv';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import { Ceremony } from '../models/ceremony';
+import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { Participant } from '../models/participant';
-import { Queue } from '../models/queue';
 import { ErrorResponse } from '../models/request';
+import { Ceremony } from '../models/ceremony';
 import { getCeremony } from './ceremony';
+import { Queue } from '../models/queue';
 
 dotEnvConfig();
 const DOMAIN: string = process.env.DOMAIN!;
@@ -17,28 +17,35 @@ export async function getQueue(uid: string): Promise<Queue> {
     return data;
 }
 
-export async function joinQueue(participant: Participant): Promise<Queue> {
+export async function joinQueue(participant: Participant): Promise<Queue|ErrorResponse> {
     const db = getFirestore();
-    const uid = participant.uid;
-    const ceremony = await getCeremony();
-    const index = ceremony.highestQueueIndex + 1;
-    const queue: Queue = {
-        index: index,
-        uid: uid,
-        status: 'WAITING',
-        expectedTimeToStart: getExpectedTimeToStart(ceremony, index),
-        checkingDeadline: await getCheckingDeadline(index),
-    };
     const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
-    // set new highest queue index
-    await ceremonyDB.update({
-        highestQueueIndex: index,
-        waiting: ceremony.waiting + 1,
-        numParticipants: ceremony.numParticipants + 1,
-    });
-    // join queue in ceremony
-    await ceremonyDB.collection('queue').doc(uid).set(queue);
-    return queue;
+    try {
+        const queue = await db.runTransaction(async () => {
+            const uid = participant.uid;
+            const ceremony = await getCeremony();
+            const index = ceremony.highestQueueIndex + 1;
+            const queue: Queue = {
+                index: index,
+                uid: uid,
+                status: 'WAITING',
+                expectedTimeToStart: getExpectedTimeToStart(ceremony, index),
+                checkingDeadline: await getCheckingDeadline(index),
+            };
+            // join queue in ceremony
+            await ceremonyDB.collection('queue').doc(uid).set(queue);
+            return queue;
+        });
+        // set new highest queue index
+        await ceremonyDB.update({
+            highestQueueIndex: FieldValue.increment(1),
+            waiting: FieldValue.increment(1),
+            numParticipants: FieldValue.increment(1),
+        });
+        return queue;
+    } catch (error) {
+        return <ErrorResponse>{code: -1, message: 'There was an error joining the queue. Please try again'}
+    }
 }
 
 export async function checkinQueue(participant: Participant): Promise<Queue|ErrorResponse> {
@@ -57,7 +64,7 @@ export async function checkinQueue(participant: Participant): Promise<Queue|Erro
     const now = Timestamp.fromMillis(Date.now() - (SECONDS_ALLOWANCE_FOR_CHECKIN *1000));
     if ( queue.checkingDeadline.valueOf() < now.valueOf() ){
         // if participant missed the deadline then we change status to ABSENT
-        return absentQueue(queue, ceremony);
+        return absentQueue(queue);
     }
     if (ceremony.currentIndex !== index){
         await ceremonyDB.collection('queue').doc(uid).update({
@@ -69,17 +76,17 @@ export async function checkinQueue(participant: Participant): Promise<Queue|Erro
     }
     // participant is ready to start contribution
     await ceremonyDB.collection('queue').doc(uid).update({status: 'READY'});
-    await ceremonyDB.update({waiting: ceremony.waiting -1 });
+    await ceremonyDB.update({waiting: FieldValue.increment(-1) });
     queue.status = 'READY';
     return queue;
 }
 
-export async function leaveQueue(queue: Queue, ceremony: Ceremony): Promise<Queue|ErrorResponse> {
+export async function leaveQueue(queue: Queue): Promise<Queue|ErrorResponse> {
     if (queue.status === 'WAITING' || queue.status === 'READY' || queue.status === 'RUNNING'){
         const db = getFirestore();
         const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
         await ceremonyDB.collection('queue').doc(queue.uid).update({status: 'LEFT'});
-        await ceremonyDB.update({waiting: ceremony.waiting - 1});
+        await ceremonyDB.update({waiting: FieldValue.increment(-1)});
         queue.status = 'LEFT';
         return queue;
     } else {
@@ -87,11 +94,11 @@ export async function leaveQueue(queue: Queue, ceremony: Ceremony): Promise<Queu
     }
 }
 
-async function absentQueue(queue: Queue, ceremony: Ceremony): Promise<Queue> {
+async function absentQueue(queue: Queue): Promise<Queue> {
     const db = getFirestore();
     const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
     await ceremonyDB.collection('queue').doc(queue.uid).update({status: 'ABSENT'});
-    await ceremonyDB.update({waiting: ceremony.waiting - 1});
+    await ceremonyDB.update({waiting: FieldValue.increment(-1)});
     queue.status = 'ABSENT';
     return queue;
 }
