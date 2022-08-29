@@ -39,3 +39,5 @@ The following commands might be useful for managing PM2-running applications:
 1. ```pm2 status```: shows all applications (running or stopped). If app was clusterified then it would show all processes
 2. ```pm2 stop [appName | fileName ]```: stops all proccesses related to that specific application
 3. ```pm2 delete [appName | fileName ]```: delete all proccesses related to that specific application from PM2
+
+.
