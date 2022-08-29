@@ -1,4 +1,8 @@
 node_modules
 dist
 
+.eslintcache*
+
 firebase-debug.log
+firebase_skey*
+**/firebaseConfig*
