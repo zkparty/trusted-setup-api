@@ -55,7 +55,6 @@ export async function checkinQueue(participant: Participant): Promise<Queue|Erro
     const ceremony = await getCeremony();
     const db = getFirestore();
     const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
-    const index = queue.index;
     if (!queue){
         return <ErrorResponse>{code: -1, message: 'Participant has not joined the queue'};
     }
@@ -67,6 +66,7 @@ export async function checkinQueue(participant: Participant): Promise<Queue|Erro
         // if participant missed the deadline then we change status to ABSENT
         return absentQueue(queue);
     }
+    const index = queue.index;
     if (ceremony.currentIndex !== index){
         await ceremonyDB.collection('queue').doc(uid).update({
             expectedTimeToStart: getExpectedTimeToStart(ceremony, index),
