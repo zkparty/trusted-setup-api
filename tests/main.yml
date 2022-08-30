@@ -1,0 +1,27 @@
+config:
+  target: "http://{{$processEnvironment.DOMAIN}}:{{$processEnvironment.PORT}}"
+  phases:
+    - duration: 1
+      arrivalRate: 1
+      name: 'Warm up'
+  payload:
+    name: participants
+    cast: false
+    loadAll: true
+    skipHeader: true
+    path: "./participants.csv"
+    fields:
+      - "address"
+      - "signature"
+      - "privateKey"
+
+scenarios:
+  - name: "Login participants"
+    flow:
+      - loop:
+        - post:
+            url: "/participant/login/address"
+            json:
+              address: "{{ $loopElement.address }}"
+              signature: "{{ $loopElement.signature }}"
+        over: participants

@@ -2,6 +2,7 @@ node_modules
 dist
 
 .eslintcache*
+**/*.csv
 
 firebase-debug.log
 firebase_skey*

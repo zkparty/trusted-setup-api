@@ -40,4 +40,7 @@ The following commands might be useful for managing PM2-running applications:
 2. ```pm2 stop [appName | fileName ]```: stops all proccesses related to that specific application
 3. ```pm2 delete [appName | fileName ]```: delete all proccesses related to that specific application from PM2
 
-.
+## **Artillery tests**
+
+1. Generate participants data (private keys, public addresses and signed messages): ```node .\auxiliar\generateParticipantCSV.mjs```
+2. Run the tests using variables from the .env file: ```artillery run .\tests\main.yml --dotenv .env```
