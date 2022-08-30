@@ -22,6 +22,15 @@ scenarios:
         - post:
             url: "/participant/login/address"
             json:
-              address: "{{ $loopElement.address }}"
-              signature: "{{ $loopElement.signature }}"
+              address:    "{{ $loopElement.address }}"
+              signature:  "{{ $loopElement.signature }}"
+            capture:
+              - json: "$.token"
+                as:   "token"
+        - think: 1 # wait 5 seconds
+        - get:
+            url: "/queue/checkin"
+            headers:
+              authorization: "Bearer {{ token }}"
+
         over: participants
