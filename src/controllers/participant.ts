@@ -33,9 +33,13 @@ export async function loginParticipantWithAddress(loginRequest: LoginRequest): P
 }
 
 function isSignatureInvalid(address: string, signature: string): boolean {
-    const hash = ethers.utils.hashMessage(SIGNED_MESSAGE);
-    const recoveredAddress = ethers.utils.recoverAddress(hash, signature);
-    return recoveredAddress !== ethers.utils.getAddress(address);
+    try {
+        const hash = ethers.utils.hashMessage(SIGNED_MESSAGE);
+        const recoveredAddress = ethers.utils.recoverAddress(hash, signature);
+        return recoveredAddress !== ethers.utils.getAddress(address);
+    } catch (error) {
+        return true;
+    }
 }
 
 export async function loginParticipantWithGithub(githubUser: GithubUserProfile): Promise<LoginResponse> {
