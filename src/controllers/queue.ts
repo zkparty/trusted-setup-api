@@ -9,6 +9,7 @@ import { Queue } from '../models/queue';
 dotEnvConfig();
 const DOMAIN: string = process.env.DOMAIN!;
 const SECONDS_ALLOWANCE_FOR_CHECKIN = Number(process.env.SECONDS_ALLOWANCE_FOR_CHECKIN!);
+const SECONDS_INTERVAL_BETWEEN_CHECKINS = Number(process.env.SECONDS_INTERVAL_BETWEEN_CHECKINS!);
 
 export async function getQueue(uid: string): Promise<Queue> {
     const db = getFirestore();
@@ -118,10 +119,10 @@ async function getCheckingDeadline(index: number): Promise<Timestamp> {
     const expectedTimeToStart = getExpectedTimeToStart(ceremony, index);
     const expectedTimeToStartMillis = expectedTimeToStart.seconds * 1000;
     const halfOfExpectedTime = ( Date.now() - expectedTimeToStartMillis ) / 2;
-    const anHour = 60 * 60 * 1000; // minutes * seconds * milliseconds
-    if (halfOfExpectedTime < anHour){
+    const interval = SECONDS_INTERVAL_BETWEEN_CHECKINS * 1000; // * milliseconds
+    if (halfOfExpectedTime < interval){
         return Timestamp.fromMillis(Date.now() + halfOfExpectedTime);
     } else {
-        return Timestamp.fromMillis(Date.now() + anHour);
+        return Timestamp.fromMillis(Date.now() + interval);
     }
 }
