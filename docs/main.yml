@@ -1,6 +1,20 @@
 openapi: 3.0.0
 info:
-  title: setup-mpc-ui/api-server
+  title: trusted-setup-api
+  description: >-
+    This web server was developed to be use in Trusted Setup Ceremonies. The API
+    server acts as a coordinator for all participants to login, join the queue,
+    download the transcript and start the computation. It can be used by other
+    developers and teams to building their own client implementation. To learn
+    more about this API check out the [KGZ Ceremony
+    Specs](https://github.com/zkparty/kzg-ceremony-specs).
+
+
+    The overall architecture of the setup is described in the image below.
+    Remember that the data of the setup is store in a Firebase project.
+
+
+    ![](https://content.pstmn.io/b4b2352e-5c65-4150-b1fe-2dff3a8ab830/VHJ1c3RlZFNldHVwSGlnaExldmVsQ29tcG9uZW50cy5wbmc=)
   version: 1.0.0
 servers:
   - url: http://{{url}}
@@ -10,27 +24,43 @@ components:
       type: http
       scheme: bearer
 tags:
-  - name: ceremony
-  - name: participant
-  - name: queue
-  - name: contribution
+  - name: Ceremony
+    description: >-
+      A ceremony object contains all the information regarding the ceremony
+      coordinated by the API server. It is assumed that there would be only one
+      ceremony per deployed API server so in case a new ceremony needs to be
+      created, a new API server should be deployed.
+  - name: Participant
+    description: >-
+      Participants represent real users who want to contribute to the ceremony.
+      To do that, they would need to pass anti-sybil mechanisms described in the
+      specifications. Participants would login and get a JWT token in return to
+      be used in further requests to the API server.
+  - name: Queue
+    description: >-
+      The queue object represents a position of a specific participant in the
+      line of people waiting to contribute to the ceremony. When a participant
+      joins the queue, he needs to be checking in every N time to show his
+      presence and willingness to participate.
+  - name: Contribution
+    description: >-
+      The contribution file contains all entropy and computations performed by
+      different participants in the ceremony. In case a malicious participant
+      tries to upload a wrong transcript, the API server would verify the
+      transcript and not include it in case it detects something is wrong. This
+      way the next participant can take the previous transcript and the
+      malicious part would not affect the ceremony.
 paths:
   /ceremony/create:
     post:
       tags:
-        - ceremony
+        - Ceremony
       summary: ceremony/create
       description: >-
-        StartFragment
-
-
         This method can be called only once by the ceremony coordinator. In case
         another ceremony needs to be performed, a new API server should be
         deployed. If a ceremony is already created them a "already created"
         message will be send as response.
-
-
-        EndFragment
       requestBody:
         content:
           application/json:
@@ -56,8 +86,12 @@ paths:
   /ceremony/status:
     get:
       tags:
-        - ceremony
+        - Ceremony
       summary: ceremony/status
+      description: >-
+        Get the status information of the server ceremony like number of
+        participants, number of completed contributions, number of waiting
+        participants, last valid index, etc.
       responses:
         '200':
           description: Successful response
@@ -66,17 +100,21 @@ paths:
   /participant/login/address:
     post:
       tags:
-        - participant
+        - Participant
       summary: participant/login/address
+      description: >-
+        Every ceremony's participant needs to be logged in to avoid sybil
+        attacks (multiple accounts). Participants can login using their wallet
+        public address and a signed message.
       requestBody:
         content:
           application/json:
             schema:
               type: object
               example:
-                address: '0x102ff93e06C52A0C7a741D76Cf81Db18bDEc2E67'
+                address: '0xfAce669798EbFA92Ec1e47Adc86b1eA213F564bD'
                 signature: >-
-                  0x0c1a27c10619f48aa3e5ae5901690277654fb8a28232f6135482ef2df70f412c6632e3e61e716f9a61e404244369f51b1879463b547c2adaa9cddc99278e768e1c
+                  0x0b89b638bcb4dc234507bcc426ac2324bbb5e3c17ad68545a05c4d39f6e83a4c631a6a30e3af78c8f70c50dc797be24f660e622896e1c5456999507286c938541b
       responses:
         '200':
           description: Successful response
@@ -85,8 +123,15 @@ paths:
   /participant/login/github:
     get:
       tags:
-        - participant
+        - Participant
       summary: participant/login/github
+      description: >-
+        Every ceremony's participant needs to be logged in to avoid sybil
+        attacks (multiple accounts). This route allows participants to login
+        using a Github account. Calling this URL in a browser would redirect to
+        Github for authorization and if approved, it would redirect back to the
+        API callback route ( `login/github/callback`). The callback route is for
+        internal use. Do not try to call it directly.
       responses:
         '200':
           description: Successful response
@@ -95,8 +140,14 @@ paths:
   /queue/join:
     get:
       tags:
-        - queue
+        - Queue
       summary: queue/join
+      description: >-
+        Participants can use this route (with their JWT token in the
+        authorization header) to join the queue to contribute into the ceremony.
+        Response will inform participant about expected time to contribute and
+        an updated check-in time to prevent abandoned positions blocking the
+        queue.
       security:
         - bearerAuth: []
       responses:
@@ -107,8 +158,21 @@ paths:
   /queue/checkin:
     get:
       tags:
-        - queue
+        - Queue
       summary: queue/checkin
+      description: >-
+        Participants can use this route to check-in in the specified time given
+        by `/queue/join` or `/queue/checkin` itself. There is a small time
+        allowance to help participants with any issues to still be able to check
+        in correctly. If the checking time is after the call time then the queue
+        would be set to `ABSENT`. If the current index of the ceremony matches
+        the participant index then the call sends the state to `READY` to notify
+        the participant they can start their contribution calling
+        `/contribution/start`.
+
+
+        In case a participant does not checking on time, an internal CRON job
+        would set his queue state to ABSENT.
       security:
         - bearerAuth: []
       responses:
@@ -119,8 +183,18 @@ paths:
   /queue/leave:
     get:
       tags:
-        - queue
+        - Queue
       summary: queue/leave
+      description: >-
+        Participants can leave the queue voluntarily in case there is any issue
+        in their machine or they are not willing to participate anymore. The
+        queue state is set to `LEFT` and participants can rejoin the queue later
+        on. When participants leave the queue by not doing the check-in on time,
+        they would not be able to rejoin later.
+
+
+        Participants can leave only if the queue status is `WAITING`, `READY`
+        and `RUNNING`.
       security:
         - bearerAuth: []
       responses:
@@ -131,8 +205,13 @@ paths:
   /contribution/start:
     post:
       tags:
-        - contribution
+        - Contribution
       summary: contribution/start
+      description: >-
+        After the `/queue/checkin` route tells the participant it is time for
+        him to start his contribution. The participant needs to call this method
+        to download the transcript. The entropy calculation and preparation
+        process has to be performed before in order to not waste time.
       requestBody:
         content:
           application/json:
@@ -151,8 +230,14 @@ paths:
   /contribution/complete:
     post:
       tags:
-        - contribution
+        - Contribution
       summary: contribution/complete
+      description: >-
+        After the participant has finished computing his transcript, he needs to
+        upload it to this route according to the JSON schema in the
+        specifications. The API server would check the transcript validity and
+        update the ceremony current index to allow the next participant to start
+        his contribution.
       requestBody:
         content:
           application/json:
@@ -170,8 +255,12 @@ paths:
   /contribution/abort:
     get:
       tags:
-        - contribution
+        - Contribution
       summary: contribution/abort
+      description: >-
+        In case there is any problem with the computation, the participant can
+        call this route to notify the API server to update the ceremony current
+        index and update the participant's queue state to `LEFT`.
       security:
         - bearerAuth: []
       responses:
