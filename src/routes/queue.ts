@@ -46,7 +46,7 @@ router.use(ceremonyExists);
 router.get('/join', authenticateParticipant, async (req: Request, res: Response) => {
     const participant = req.user as Participant;
     const queue = await getQueue(participant.uid);
-    if (queue){
+    if (queue && queue.status !== 'LEFT'){
         res.json(queue);
         return;
     }
