@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "3909346a-9ad3-4940-9491-57c6560aa8aa",
 		"name": "trusted-setup-api",
-		"description": "This web server was developed to be use in Trusted Setup Ceremonies. The API server acts as a coordinator for all participants to login, join the queue, download the transcript and start the computation. It can be used by other developers and teams to building their own client implementation. To learn more about this API check out the [KGZ Ceremony Specs](https://github.com/zkparty/kzg-ceremony-specs).\n\nThe overall architecture of the setup is described in the image below. Remember that the data of the setup is store in a Firebase project.\n\n![](https://content.pstmn.io/b4b2352e-5c65-4150-b1fe-2dff3a8ab830/VHJ1c3RlZFNldHVwSGlnaExldmVsQ29tcG9uZW50cy5wbmc=)",
+		"description": "This web server was developed to be use in Trusted Setup Ceremonies. The API server acts as a coordinator for all participants to login, join the queue, download the transcript and start the computation. It can be used by other developers and teams to building their own client implementation. To learn more about this API check out the [KGZ Ceremony Specs](https://github.com/zkparty/kzg-ceremony-specs).\n\nThe overall architecture of the setup is described in the image below. Remember that the data of the setup is store in a Firebase project.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "12166682"
 	},

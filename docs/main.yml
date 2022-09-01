@@ -12,9 +12,6 @@ info:
 
     The overall architecture of the setup is described in the image below.
     Remember that the data of the setup is store in a Firebase project.
-
-
-    ![](https://content.pstmn.io/b4b2352e-5c65-4150-b1fe-2dff3a8ab830/VHJ1c3RlZFNldHVwSGlnaExldmVsQ29tcG9uZW50cy5wbmc=)
   version: 1.0.0
 servers:
   - url: http://{{url}}
