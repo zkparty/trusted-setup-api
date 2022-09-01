@@ -40,6 +40,10 @@ The following commands might be useful for managing PM2-running applications:
 2. ```pm2 stop [appName | fileName ]```: stops all proccesses related to that specific application
 3. ```pm2 delete [appName | fileName ]```: delete all proccesses related to that specific application from PM2
 
+## **Run the documentation server**
+1. Run ```npm run docs-create```
+2. Go to [http://localhost:3004/index.html]()
+
 ## **Artillery tests**
 
 1. Generate participants data (private keys, public addresses and signed messages): ```node .\auxiliar\generateParticipantCSV.mjs```
