@@ -1,0 +1,406 @@
+{
+	"info": {
+		"_postman_id": "3909346a-9ad3-4940-9491-57c6560aa8aa",
+		"name": "setup-mpc-ui/api-server",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12166682"
+	},
+	"item": [
+		{
+			"name": "ceremony",
+			"item": [
+				{
+					"name": "ceremony/create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"A Test Ceremony\",\r\n    \"description\": \"This is a test for API development\",\r\n    \"circuitFileName\": \"fileNameGoesHere\",\r\n    \"mode\": \"POWERSOFTAU\",\r\n    \"instructions\": \"Enter the text content instructions to show to participants\",\r\n    \"github\": \"https://github.com/zkparty/setup-mpc-ui\",\r\n    \"homepage\": \"https://trustedsetuptest.web.app\",\r\n    \"adminAddr\": \"admin@example.com\",\r\n    \"startTime\": 1661374869000,\r\n    \"endTime\": 1662374869000,\r\n    \"minParticipants\": 2\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/ceremony/create",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"ceremony",
+								"create"
+							]
+						},
+						"description": "StartFragment\n\nThis method can be called only once by the ceremony coordinator. In case another ceremony needs to be performed, a new API server should be deployed. If a ceremony is already created them a \"already created\" message will be send as response.\n\nEndFragment"
+					},
+					"response": []
+				},
+				{
+					"name": "ceremony/status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/ceremony/status",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"ceremony",
+								"status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "participant",
+			"item": [
+				{
+					"name": "participant/login/address",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();\r",
+									"pm.test(\"Check code\", function () {\r",
+									"    pm.expect(jsonData.code).to.be.eql(0);\r",
+									"});\r",
+									"pm.test(\"Check JWT\", function () {\r",
+									"    pm.expect(jsonData.token).to.be.a(\"string\");\r",
+									"});\r",
+									"\r",
+									"pm.environment.set(\"JWT_token\", jsonData.token);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"address\": \"0x102ff93e06C52A0C7a741D76Cf81Db18bDEc2E67\",\r\n    \"signature\": \"0x0c1a27c10619f48aa3e5ae5901690277654fb8a28232f6135482ef2df70f412c6632e3e61e716f9a61e404244369f51b1879463b547c2adaa9cddc99278e768e1c\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/participant/login/address",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"participant",
+								"login",
+								"address"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "participant/login/github",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/participant/login/github",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"participant",
+								"login",
+								"github"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "queue",
+			"item": [
+				{
+					"name": "queue/join",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/queue/join",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"queue",
+								"join"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "queue/checkin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/queue/checkin",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"queue",
+								"checkin"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "queue/leave",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/queue/leave",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"queue",
+								"leave"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "contribution",
+			"item": [
+				{
+					"name": "contribution/start",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"client\": \"Official-React-Client\",\r\n    \"computation\": \"Identifiable-Computation-Method\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/contribution/start",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"contribution",
+								"start"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "contribution/complete",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"transcript\": \"?\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/contribution/complete",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"contribution",
+								"complete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "contribution/abort",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/contribution/abort",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"contribution",
+								"abort"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

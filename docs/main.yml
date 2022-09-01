@@ -1,0 +1,181 @@
+openapi: 3.0.0
+info:
+  title: setup-mpc-ui/api-server
+  version: 1.0.0
+servers:
+  - url: http://{{url}}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+tags:
+  - name: ceremony
+  - name: participant
+  - name: queue
+  - name: contribution
+paths:
+  /ceremony/create:
+    post:
+      tags:
+        - ceremony
+      summary: ceremony/create
+      description: >-
+        StartFragment
+
+
+        This method can be called only once by the ceremony coordinator. In case
+        another ceremony needs to be performed, a new API server should be
+        deployed. If a ceremony is already created them a "already created"
+        message will be send as response.
+
+
+        EndFragment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                title: A Test Ceremony
+                description: This is a test for API development
+                circuitFileName: fileNameGoesHere
+                mode: POWERSOFTAU
+                instructions: Enter the text content instructions to show to participants
+                github: https://github.com/zkparty/setup-mpc-ui
+                homepage: https://trustedsetuptest.web.app
+                adminAddr: admin@example.com
+                startTime: 1661374869000
+                endTime: 1662374869000
+                minParticipants: 2
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /ceremony/status:
+    get:
+      tags:
+        - ceremony
+      summary: ceremony/status
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /participant/login/address:
+    post:
+      tags:
+        - participant
+      summary: participant/login/address
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                address: '0x102ff93e06C52A0C7a741D76Cf81Db18bDEc2E67'
+                signature: >-
+                  0x0c1a27c10619f48aa3e5ae5901690277654fb8a28232f6135482ef2df70f412c6632e3e61e716f9a61e404244369f51b1879463b547c2adaa9cddc99278e768e1c
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /participant/login/github:
+    get:
+      tags:
+        - participant
+      summary: participant/login/github
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /queue/join:
+    get:
+      tags:
+        - queue
+      summary: queue/join
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /queue/checkin:
+    get:
+      tags:
+        - queue
+      summary: queue/checkin
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /queue/leave:
+    get:
+      tags:
+        - queue
+      summary: queue/leave
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /contribution/start:
+    post:
+      tags:
+        - contribution
+      summary: contribution/start
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                client: Official-React-Client
+                computation: Identifiable-Computation-Method
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /contribution/complete:
+    post:
+      tags:
+        - contribution
+      summary: contribution/complete
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                transcript: '?'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
+  /contribution/abort:
+    get:
+      tags:
+        - contribution
+      summary: contribution/abort
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json: {}
