@@ -9,6 +9,7 @@ import { Queue } from '../models/queue';
 dotEnvConfig();
 const DOMAIN: string = process.env.DOMAIN!;
 const SECONDS_ALLOWANCE_FOR_CHECKIN = Number(process.env.SECONDS_ALLOWANCE_FOR_CHECKIN!);
+const SECONDS_INTERVAL_BETWEEN_CHECKINS = Number(process.env.SECONDS_INTERVAL_BETWEEN_CHECKINS!);
 
 export async function getQueue(uid: string): Promise<Queue> {
     const db = getFirestore();
@@ -54,7 +55,6 @@ export async function checkinQueue(participant: Participant): Promise<Queue|Erro
     const ceremony = await getCeremony();
     const db = getFirestore();
     const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
-    const index = queue.index;
     if (!queue){
         return <ErrorResponse>{code: -1, message: 'Participant has not joined the queue'};
     }
@@ -66,6 +66,7 @@ export async function checkinQueue(participant: Participant): Promise<Queue|Erro
         // if participant missed the deadline then we change status to ABSENT
         return absentQueue(queue);
     }
+    const index = queue.index;
     if (ceremony.currentIndex !== index){
         await ceremonyDB.collection('queue').doc(uid).update({
             expectedTimeToStart: getExpectedTimeToStart(ceremony, index),
@@ -118,10 +119,25 @@ async function getCheckingDeadline(index: number): Promise<Timestamp> {
     const expectedTimeToStart = getExpectedTimeToStart(ceremony, index);
     const expectedTimeToStartMillis = expectedTimeToStart.seconds * 1000;
     const halfOfExpectedTime = ( Date.now() - expectedTimeToStartMillis ) / 2;
-    const anHour = 60 * 60 * 1000; // minutes * seconds * milliseconds
-    if (halfOfExpectedTime < anHour){
+    const interval = SECONDS_INTERVAL_BETWEEN_CHECKINS * 1000; // * milliseconds
+    if (halfOfExpectedTime < interval){
         return Timestamp.fromMillis(Date.now() + halfOfExpectedTime);
     } else {
-        return Timestamp.fromMillis(Date.now() + anHour);
+        return Timestamp.fromMillis(Date.now() + interval);
     }
+}
+
+export async function lookForQueueAbsents(): Promise<void> {
+    console.log('setInterval: looking for queue absents');
+    const db = getFirestore();
+    const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
+    const queuesDB = ceremonyDB.collection('queue');
+    const raw = queuesDB.where('status','==','WAITING').where('checkingDeadline', '<', Timestamp.now());
+    const expiredQueues = await raw.get();
+    expiredQueues.forEach((rawQueue) => {
+        const queue = rawQueue.data() as Queue;
+        queuesDB.doc(queue.uid).update({status: 'ABSENT'});
+        ceremonyDB.update({waiting: FieldValue.increment(-1)});
+    });
+    return;
 }

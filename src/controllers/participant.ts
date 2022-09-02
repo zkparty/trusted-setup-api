@@ -130,6 +130,7 @@ export async function authenticateParticipant(req: Request, res: Response, next:
     if (!authHeader){
         console.error('LoginError: No authorization header');
         res.sendStatus(401);
+        return;
     }
     const token = authHeader?.split(" ")[1];
     try {
@@ -139,6 +140,7 @@ export async function authenticateParticipant(req: Request, res: Response, next:
     } catch (error) {
         console.error('AuthenticateError: ', error);
         res.sendStatus(401);
+        return;
     }
 }
 

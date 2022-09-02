@@ -1,0 +1,420 @@
+{
+	"info": {
+		"_postman_id": "3909346a-9ad3-4940-9491-57c6560aa8aa",
+		"name": "trusted-setup-api",
+		"description": "This web server was developed to be use in Trusted Setup Ceremonies. The API server acts as a coordinator for all participants to login, join the queue, download the transcript and start the computation. It can be used by other developers and teams to building their own client implementation. To learn more about this API check out the [KGZ Ceremony Specs](https://github.com/zkparty/kzg-ceremony-specs).\n\nThe overall architecture of the setup is described in the image below. Remember that the data of the setup is store in a Firebase project.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12166682"
+	},
+	"item": [
+		{
+			"name": "Ceremony",
+			"item": [
+				{
+					"name": "ceremony/create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"A Test Ceremony\",\r\n    \"description\": \"This is a test for API development\",\r\n    \"circuitFileName\": \"fileNameGoesHere\",\r\n    \"mode\": \"POWERSOFTAU\",\r\n    \"instructions\": \"Enter the text content instructions to show to participants\",\r\n    \"github\": \"https://github.com/zkparty/setup-mpc-ui\",\r\n    \"homepage\": \"https://trustedsetuptest.web.app\",\r\n    \"adminAddr\": \"admin@example.com\",\r\n    \"startTime\": 1661374869000,\r\n    \"endTime\": 1662374869000,\r\n    \"minParticipants\": 2\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/ceremony/create",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"ceremony",
+								"create"
+							]
+						},
+						"description": "This method can be called only once by the ceremony coordinator. In case another ceremony needs to be performed, a new API server should be deployed. If a ceremony is already created them a \"already created\" message will be send as response."
+					},
+					"response": []
+				},
+				{
+					"name": "ceremony/status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/ceremony/status",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"ceremony",
+								"status"
+							]
+						},
+						"description": "Get the status information of the server ceremony like number of participants, number of completed contributions, number of waiting participants, last valid index, etc."
+					},
+					"response": []
+				}
+			],
+			"description": "A ceremony object contains all the information regarding the ceremony coordinated by the API server. It is assumed that there would be only one ceremony per deployed API server so in case a new ceremony needs to be created, a new API server should be deployed."
+		},
+		{
+			"name": "Participant",
+			"item": [
+				{
+					"name": "participant/login/address",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();\r",
+									"pm.test(\"Check code\", function () {\r",
+									"    pm.expect(jsonData.code).to.be.eql(0);\r",
+									"});\r",
+									"pm.test(\"Check JWT\", function () {\r",
+									"    pm.expect(jsonData.token).to.be.a(\"string\");\r",
+									"});\r",
+									"\r",
+									"pm.environment.set(\"JWT_token\", jsonData.token);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"address\": \"0xfAce669798EbFA92Ec1e47Adc86b1eA213F564bD\",\r\n    \"signature\": \"0x0b89b638bcb4dc234507bcc426ac2324bbb5e3c17ad68545a05c4d39f6e83a4c631a6a30e3af78c8f70c50dc797be24f660e622896e1c5456999507286c938541b\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/participant/login/address",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"participant",
+								"login",
+								"address"
+							]
+						},
+						"description": "Every ceremony's participant needs to be logged in to avoid sybil attacks (multiple accounts). Participants can login using their wallet public address and a signed message."
+					},
+					"response": []
+				},
+				{
+					"name": "participant/login/github",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/participant/login/github",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"participant",
+								"login",
+								"github"
+							]
+						},
+						"description": "Every ceremony's participant needs to be logged in to avoid sybil attacks (multiple accounts). This route allows participants to login using a Github account. Calling this URL in a browser would redirect to Github for authorization and if approved, it would redirect back to the API callback route ( `login/github/callback`). The callback route is for internal use. Do not try to call it directly."
+					},
+					"response": []
+				}
+			],
+			"description": "Participants represent real users who want to contribute to the ceremony. To do that, they would need to pass anti-sybil mechanisms described in the specifications. Participants would login and get a JWT token in return to be used in further requests to the API server."
+		},
+		{
+			"name": "Queue",
+			"item": [
+				{
+					"name": "queue/join",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/queue/join",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"queue",
+								"join"
+							]
+						},
+						"description": "Participants can use this route (with their JWT token in the authorization header) to join the queue to contribute into the ceremony. Response will inform participant about expected time to contribute and an updated check-in time to prevent abandoned positions blocking the queue."
+					},
+					"response": []
+				},
+				{
+					"name": "queue/checkin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/queue/checkin",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"queue",
+								"checkin"
+							]
+						},
+						"description": "Participants can use this route to check-in in the specified time given by `/queue/join` or `/queue/checkin` itself. There is a small time allowance to help participants with any issues to still be able to check in correctly. If the checking time is after the call time then the queue would be set to `ABSENT`. If the current index of the ceremony matches the participant index then the call sends the state to `READY` to notify the participant they can start their contribution calling `/contribution/start`.\n\nIn case a participant does not checking on time, an internal CRON job would set his queue state to ABSENT."
+					},
+					"response": []
+				},
+				{
+					"name": "queue/leave",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/queue/leave",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"queue",
+								"leave"
+							]
+						},
+						"description": "Participants can leave the queue voluntarily in case there is any issue in their machine or they are not willing to participate anymore. The queue state is set to `LEFT` and participants can rejoin the queue later on. When participants leave the queue by not doing the check-in on time, they would not be able to rejoin later.\n\nParticipants can leave only if the queue status is `WAITING`, `READY` and `RUNNING`."
+					},
+					"response": []
+				}
+			],
+			"description": "The queue object represents a position of a specific participant in the line of people waiting to contribute to the ceremony. When a participant joins the queue, he needs to be checking in every N time to show his presence and willingness to participate."
+		},
+		{
+			"name": "Contribution",
+			"item": [
+				{
+					"name": "contribution/start",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"client\": \"Official-React-Client\",\r\n    \"computation\": \"Identifiable-Computation-Method\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/contribution/start",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"contribution",
+								"start"
+							]
+						},
+						"description": "After the `/queue/checkin` route tells the participant it is time for him to start his contribution. The participant needs to call this method to download the transcript. The entropy calculation and preparation process has to be performed before in order to not waste time."
+					},
+					"response": []
+				},
+				{
+					"name": "contribution/complete",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"transcript\": \"?\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/contribution/complete",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"contribution",
+								"complete"
+							]
+						},
+						"description": "After the participant has finished computing his transcript, he needs to upload it to this route according to the JSON schema in the specifications. The API server would check the transcript validity and update the ceremony current index to allow the next participant to start his contribution."
+					},
+					"response": []
+				},
+				{
+					"name": "contribution/abort",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{JWT_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/contribution/abort",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"contribution",
+								"abort"
+							]
+						},
+						"description": "In case there is any problem with the computation, the participant can call this route to notify the API server to update the ceremony current index and update the participant's queue state to `LEFT`."
+					},
+					"response": []
+				}
+			],
+			"description": "The contribution file contains all entropy and computations performed by different participants in the ceremony. In case a malicious participant tries to upload a wrong transcript, the API server would verify the transcript and not include it in case it detects something is wrong. This way the next participant can take the previous transcript and the malicious part would not affect the ceremony."
+		}
+	]
+}
