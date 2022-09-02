@@ -126,3 +126,18 @@ async function getCheckingDeadline(index: number): Promise<Timestamp> {
         return Timestamp.fromMillis(Date.now() + interval);
     }
 }
+
+export async function lookForQueueAbsents(): Promise<void> {
+    console.log('setInterval: looking for queue absents');
+    const db = getFirestore();
+    const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
+    const queuesDB = ceremonyDB.collection('queue');
+    const raw = queuesDB.where('status','==','WAITING').where('checkingDeadline', '<', Timestamp.now());
+    const expiredQueues = await raw.get();
+    expiredQueues.forEach((rawQueue) => {
+        const queue = rawQueue.data() as Queue;
+        queuesDB.doc(queue.uid).update({status: 'ABSENT'});
+        ceremonyDB.update({waiting: FieldValue.increment(-1)});
+    });
+    return;
+}
