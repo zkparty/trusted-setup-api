@@ -16,7 +16,26 @@ config:
       - "privateKey"
 
 scenarios:
-  - name: "Login participants"
+  - name: "Open to public"
+    flow:
+      - post:
+          url: "/ceremony/create"
+          json:
+            title: A Test Ceremony
+            description: This is a test for API development
+            circuitFileName: fileNameGoesHere
+            mode: POWERSOFTAU
+            instructions: Enter the text content instructions to show to participants
+            github: https://github.com/zkparty/setup-mpc-ui
+            homepage: https://trustedsetuptest.web.app
+            adminAddr: admin@example.com
+            startTime: 1661374869000
+            endTime: 1662374869000
+            minParticipants: 2
+      - get:
+          url: "/ceremony/status"
+
+  - name: "Logged participants"
     flow:
       - loop:
         - post:
@@ -27,10 +46,23 @@ scenarios:
             capture:
               - json: "$.token"
                 as:   "token"
-        - think: 1 # wait 5 seconds
+        - get:
+            url: "/queue/join"
+            headers:
+              authorization: "Bearer {{ token }}"
+        - think: 1 # wait 1 seconds
         - get:
             url: "/queue/checkin"
             headers:
               authorization: "Bearer {{ token }}"
+        - post:
+            url: "/contribution/start"
+            json:
+              client: "Official-React-Client"
+              computation: "Identifiable-Computation-Method"
+        - post:
+            url: "/contribution/complete"
+            json:
+              transcript: "?"
 
         over: participants
