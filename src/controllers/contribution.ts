@@ -81,13 +81,13 @@ export async function abortContribution(participant: Participant){
 }
 
 export async function lookForContributionAbsents(): Promise<void> {
-    console.log('setInterval: looking for contribution absents');
     const db = getFirestore();
     const ceremony = await getCeremony();
     const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
     const queuesDB = ceremonyDB.collection('queue');
     const raw = queuesDB.where('status','==','RUNNING');
     const runningQueues = await raw.get();
+    console.log(' [setInterval] looking for contribution absents: ' + runningQueues.size);
     runningQueues.forEach(async (rawQueue) => {
         const queue = rawQueue.data() as Queue;
         const limit = queue.computingStartTime!.seconds + ceremony.averageSecondsPerContribution +  SECONDS_ALLOWANCE_TO_COMPUTE;
