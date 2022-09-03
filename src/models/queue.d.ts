@@ -15,5 +15,6 @@ export interface Queue {
     status: queueState;
     expectedTimeToStart: Timestamp;
     checkingDeadline: Timestamp;
-    computingDeadline?: Timestamp;
-  }
+    computingStartTime?: Timestamp;
+    computingEndTime?: Timestamp;
+}
