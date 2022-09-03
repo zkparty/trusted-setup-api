@@ -109,12 +109,12 @@ async function getExpectedTimeToStart(ceremony: Ceremony, index: number): Promis
     const currentIndex = ceremony.currentIndex;
 
     const db = getFirestore();
-    const remainingParticipants = await db.collection('queue')
+    const remainingQueue = await db.collection('queue')
     .where('status','==','WAITING')
     .where('index','>', currentIndex)
     .where('index','<',index)
     .get();
-    const remainingTime = remainingParticipants.size * averageTime * 1000;
+    const remainingTime = remainingQueue.size * averageTime * 1000;
     const expectedTimeToStart = Timestamp.fromMillis(Date.now() + remainingTime);
     return expectedTimeToStart;
 }
