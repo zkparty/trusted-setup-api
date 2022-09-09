@@ -4,6 +4,7 @@ import { ImplementationDetails, Transcript } from '../models/contribution';
 import { Participant } from "../models/participant";
 import { ErrorResponse } from '../models/request';
 import { getCeremony } from './ceremony';
+import { Queue } from '../models/queue';
 import { getQueue } from './queue';
 
 
@@ -30,7 +31,7 @@ export async function startContribution(participant: Participant, implementation
     }
     await ceremonyDB.collection('queue').doc(uid).update({
         status: 'RUNNING',
-        computingDeadline: Timestamp.fromMillis(Date.now() + (SECONDS_ALLOWANCE_TO_COMPUTE * 1000)),
+        computingStartTime: Timestamp.fromMillis(Date.now()),
     });
     await saveImplementationDetails(uid, implementationDetails);
     return <Transcript>{'transcript': ceremony.transcript};
@@ -47,11 +48,17 @@ export async function completeContribution(participant: Participant, transcript:
     // TODO: verify transcript. What happens if it is wrong
     // TODO: append transcript to ceremony
     const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
+    // the await below is required to have queue endtime in getAverage function
+    await ceremonyDB.collection('queue').doc(uid).update({
+        status: 'COMPLETED',
+        computingEndTime: Timestamp.fromMillis(Date.now())
+    });
+    const newAverage = getNewAverageContributionTime(uid);
     await ceremonyDB.update({
         currentIndex: FieldValue.increment(1),
         complete: FieldValue.increment(1),
+        averageSecondsPerContribution: newAverage,
     });
-    await ceremonyDB.collection('queue').doc(uid).update({status: 'COMPLETED'});
     const queue = await getQueue(uid);
     return queue;
 }
@@ -71,4 +78,33 @@ export async function abortContribution(participant: Participant){
     } else {
         return <ErrorResponse>{code: -1, message: 'Queue status indicates that aborting is not possible'};
     }
+}
+
+export async function lookForContributionAbsents(): Promise<void> {
+    const db = getFirestore();
+    const ceremony = await getCeremony();
+    const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
+    const queuesDB = ceremonyDB.collection('queue');
+    const raw = queuesDB.where('status','==','RUNNING');
+    const runningQueues = await raw.get();
+    console.log(' [setInterval] looking for contribution absents: ' + runningQueues.size);
+    runningQueues.forEach(async (rawQueue) => {
+        const queue = rawQueue.data() as Queue;
+        const limit = queue.computingStartTime!.seconds + ceremony.averageSecondsPerContribution +  SECONDS_ALLOWANCE_TO_COMPUTE;
+        if (limit > (Date.now()/1000)) {
+            queuesDB.doc(queue.uid).update({status: 'ABSENT'});
+            await ceremonyDB.update({
+                currentIndex: FieldValue.increment(1),
+            });
+        }
+    });
+    return;
+}
+
+async function getNewAverageContributionTime(uid: string): Promise<number> {
+    const ceremony = await getCeremony();
+    const queue = await getQueue(uid);
+    const contributionTime = queue.computingEndTime!.seconds - queue.computingEndTime!.seconds;
+    const newAverage = (ceremony.averageSecondsPerContribution + contributionTime) / 2;
+    return newAverage;
 }

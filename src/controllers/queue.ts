@@ -30,7 +30,7 @@ export async function joinQueue(participant: Participant): Promise<Queue|ErrorRe
                 index: index,
                 uid: uid,
                 status: 'WAITING',
-                expectedTimeToStart: getExpectedTimeToStart(ceremony, index),
+                expectedTimeToStart: await getExpectedTimeToStart(ceremony, index),
                 checkingDeadline: await getCheckingDeadline(index),
             };
             // join queue in ceremony
@@ -69,7 +69,7 @@ export async function checkinQueue(participant: Participant): Promise<Queue|Erro
     const index = queue.index;
     if (ceremony.currentIndex !== index){
         await ceremonyDB.collection('queue').doc(uid).update({
-            expectedTimeToStart: getExpectedTimeToStart(ceremony, index),
+            expectedTimeToStart: await getExpectedTimeToStart(ceremony, index),
             checkingDeadline: await getCheckingDeadline(index),
         });
         const savedQueue = await getQueue(uid);
@@ -104,19 +104,24 @@ async function absentQueue(queue: Queue): Promise<Queue> {
     return queue;
 }
 
-function getExpectedTimeToStart(ceremony: Ceremony, index: number): Timestamp {
+async function getExpectedTimeToStart(ceremony: Ceremony, index: number): Promise<Timestamp> {
     const averageTime = ceremony.averageSecondsPerContribution;
     const currentIndex = ceremony.currentIndex;
 
-    const remainingParticipants = index - currentIndex;
-    const remainingTime = remainingParticipants * averageTime * 1000;
+    const db = getFirestore();
+    const remainingQueue = await db.collection('queue')
+    .where('status','==','WAITING')
+    .where('index','>', currentIndex)
+    .where('index','<',index)
+    .get();
+    const remainingTime = remainingQueue.size * averageTime * 1000;
     const expectedTimeToStart = Timestamp.fromMillis(Date.now() + remainingTime);
     return expectedTimeToStart;
 }
 
 async function getCheckingDeadline(index: number): Promise<Timestamp> {
     const ceremony = await getCeremony();
-    const expectedTimeToStart = getExpectedTimeToStart(ceremony, index);
+    const expectedTimeToStart = await getExpectedTimeToStart(ceremony, index);
     const expectedTimeToStartMillis = expectedTimeToStart.seconds * 1000;
     const halfOfExpectedTime = ( Date.now() - expectedTimeToStartMillis ) / 2;
     const interval = SECONDS_INTERVAL_BETWEEN_CHECKINS * 1000; // * milliseconds
@@ -128,12 +133,12 @@ async function getCheckingDeadline(index: number): Promise<Timestamp> {
 }
 
 export async function lookForQueueAbsents(): Promise<void> {
-    console.log('setInterval: looking for queue absents');
     const db = getFirestore();
     const ceremonyDB = db.collection('ceremonies').doc(DOMAIN);
     const queuesDB = ceremonyDB.collection('queue');
     const raw = queuesDB.where('status','==','WAITING').where('checkingDeadline', '<', Timestamp.now());
     const expiredQueues = await raw.get();
+    console.log(' [setInterval] looking for queue absents: ' + expiredQueues.size);
     expiredQueues.forEach((rawQueue) => {
         const queue = rawQueue.data() as Queue;
         queuesDB.doc(queue.uid).update({status: 'ABSENT'});

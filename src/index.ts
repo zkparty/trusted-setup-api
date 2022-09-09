@@ -8,6 +8,7 @@ import { router as ceremonyRoutes } from './routes/ceremony';
 import { lookForQueueAbsents } from './controllers/queue';
 import { router as queueRoutes } from './routes/queue';
 import serviceAccount from './firebase_skey.json';
+import { lookForContributionAbsents } from './controllers/contribution';
 
 dotEnvConfig();
 
@@ -19,6 +20,7 @@ const DOMAIN = process.env.DOMAIN!;
 const SECONDS_INTERVAL_LOOK_FOR_ABSENTS = Number(process.env.SECONDS_INTERVAL_LOOK_FOR_ABSENTS!);
 
 setInterval(lookForQueueAbsents, SECONDS_INTERVAL_LOOK_FOR_ABSENTS * 1000);
+setInterval(lookForContributionAbsents, SECONDS_INTERVAL_LOOK_FOR_ABSENTS * 1000);
 
 app.use(express.json());
 app.use(morgan('combined'));
