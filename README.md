@@ -42,10 +42,8 @@ The following commands might be useful for managing PM2-running applications:
 2. `pm2 stop [appName | fileName ]`: stops all proccesses related to that specific application
 3. `pm2 delete [appName | fileName ]`: delete all proccesses related to that specific application from PM2
 
-## **Run the documentation server**
-1. Clone repo: `git clone https://github.com/zkparty/trusted-setup-api`
-1. Run `npm run docs-create`
-2. Go to [http://localhost:3004/index.html]()
+## **Documentation**
+You can find the OpenAPI specifications in the `/docs` directory and in [APITree](https://hub.apitree.com/NicoSerranoP/Trusted-Setup-API/). There is an exported Postman collection in the `/docs` with usage examples of all endpoints.
 
 ## **Artillery tests**
 
