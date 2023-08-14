@@ -23,7 +23,7 @@ To access and interact with most of the API endpoints, users would need a JWT ac
 1. Clone repo: `git clone https://github.com/zkparty/trusted-setup-api`
 3. Install dependencies: `npm install`
 4. Set up your configuration in the `.env` file
-5. Set up your `firebase_skey.json` file in the `/src` directory
+5. Set up your `firebase_skey.json` file in the `/src` directory (instructions on how to get this file [here](https://clemfournier.medium.com/how-to-get-my-firebase-service-account-key-file-f0ec97a21620))
 6. Run the development server: `npm run dev`
 7. Use the APIs in `http://localhost:PORT/`
 
